@@ -5,7 +5,7 @@
 
 BEGIN
 {
-        printf("%-16s %-16s %s\n", "OLD", "NEW", "LEN");
+        printf("%-8s %-16s %-16s %s\n", "PID", "COMM", "NAME", "LEN(B)");
 }
 
 
@@ -13,13 +13,10 @@ k:ovl_copy_up_data
 / comm == "a.out" /
 {
         $old = (struct path*)arg0;
-        $new = (struct path*)arg1;
 
-        // the process that's doing that under a namespace
-        // the action that made this `copy_up` happen
-
-        printf("%-16s %-16s %d\n",
+        printf("%-8d %-16s %-16s %d\n",
+			pid,
+			comm,
                         str($old->dentry->d_name.name),
-                        str($new->dentry->d_name.name),
-                        arg2);
+                        arg2 >> 10);
 }
