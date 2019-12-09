@@ -14,6 +14,3 @@ teardown:
 	sudo umount ./merged
 	rm -rf ./lower ./upper ./merged ./work
 
-
-run:
-	./a.out -

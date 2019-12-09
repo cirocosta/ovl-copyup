@@ -1,22 +1,39 @@
 #!/snap/bin/bpftrace
 
-#include <linux/path.h>
-#include <linux/dcache.h>
-
 BEGIN
 {
-        printf("%-8s %-16s %-16s %s\n", "PID", "COMM", "NAME", "LEN(B)");
+        printf("%-8s %-16s %-16s %-16s %-16s\n", 
+	    "PID", "COMM", "NAME", "LEN(B)", "ELAPSED (ms)");
 }
 
 
-k:ovl_copy_up_data
-/ comm == "a.out" /
+kprobe:do_fchownat
 {
-        $old = (struct path*)arg0;
+  @fname[tid] = str(arg1);
+  @start[tid] = nsecs;
+}
 
-        printf("%-8d %-16s %-16s %d\n",
-			pid,
-			comm,
-                        str($old->dentry->d_name.name),
-                        arg2 >> 10);
+
+kprobe:ovl_copy_up_data
+/ @start[tid] != 0 /
+{
+	@len[tid] = arg2;
+}
+
+kretprobe:ovl_copy_up_data
+/ @len[tid] != 0 /
+{
+        printf("%-8d %-16s %-16s %-16d %d\n",
+			pid, comm,
+                        @fname[tid],
+			@len[tid],
+			(nsecs - @start[tid]) / 1000000);
+
+	delete(@len[tid]);
+}
+
+kretprobe:do_fchownat
+{
+	delete(@fname[tid]);
+	delete(@start[tid]);
 }
